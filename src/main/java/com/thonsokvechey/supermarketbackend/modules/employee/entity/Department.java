@@ -1,5 +1,6 @@
 package com.thonsokvechey.supermarketbackend.modules.employee.entity;
 
+import com.thonsokvechey.supermarketbackend.modules.finance.entity.Branch;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,8 +24,9 @@ public class Department {
     @EqualsAndHashCode.Include
     private UUID id;
 
-    @Column(name = "branch_id", nullable = false)
-    private UUID branchId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id", nullable = false)
+    private Branch branch;
 
     @Column(name = "name", length = 100, nullable = false)
     private String name;
