@@ -2,6 +2,7 @@ package com.thonsokvechey.supermarketbackend.modules.auth.controller;
 
 import com.thonsokvechey.supermarketbackend.modules.auth.dto.LoginRequest;
 import com.thonsokvechey.supermarketbackend.modules.auth.dto.LoginResponse;
+import com.thonsokvechey.supermarketbackend.modules.auth.dto.LogoutRequest;
 import com.thonsokvechey.supermarketbackend.modules.auth.dto.RefreshTokenRequest;
 import com.thonsokvechey.supermarketbackend.modules.auth.service.AuthService;
 import com.thonsokvechey.supermarketbackend.security.CustomUserDetails;
@@ -11,8 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -28,11 +31,17 @@ public class AuthController {
         return ResponseEntity.ok(authService.refreshToken(request));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @RequestBody(required = false) LogoutRequest request) {
+        authService.logout(authorizationHeader, request);
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<LoginResponse.UserInfo> me(
-            @AuthenticationPrincipal CustomUserDetails userDetails
-    ) {
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(authService.getCurrentUser(userDetails));
     }
 }
-

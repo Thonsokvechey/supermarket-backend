@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class JwtService {
@@ -19,6 +20,7 @@ public class JwtService {
     private final SecretKey signingKey;
     private final long accessTokenExpirationMs;
     private final long refreshTokenExpirationMs;
+    private final Map<String, Date> blacklistedTokens = new ConcurrentHashMap<>();
 
     public JwtService(
             @Value("${post.free.app.jwtSecret}") String jwtSecret,
@@ -81,7 +83,32 @@ public class JwtService {
         return extractAllClaims(token).get("tokenType", String.class);
     }
 
+    public void blacklistToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            blacklistedTokens.put(token, claims.getExpiration());
+            blacklistedTokens.entrySet().removeIf(entry -> entry.getValue().before(new Date()));
+        } catch (Exception ignored) {
+            // Token already expired or invalid
+        }
+    }
+
+    public boolean isTokenBlacklisted(String token) {
+        Date exp = blacklistedTokens.get(token);
+        if (exp == null) {
+            return false;
+        }
+        if (exp.before(new Date())) {
+            blacklistedTokens.remove(token);
+            return false;
+        }
+        return true;
+    }
+
     public boolean isTokenValid(String token, String expectedTokenType) {
+        if (isTokenBlacklisted(token)) {
+            return false;
+        }
         Claims claims = extractAllClaims(token);
         String tokenType = claims.get("tokenType", String.class);
         Date expiration = claims.getExpiration();
@@ -92,4 +119,3 @@ public class JwtService {
         return accessTokenExpirationMs;
     }
 }
-

@@ -2,6 +2,7 @@ package com.thonsokvechey.supermarketbackend.modules.auth.service.impl;
 
 import com.thonsokvechey.supermarketbackend.modules.auth.dto.LoginRequest;
 import com.thonsokvechey.supermarketbackend.modules.auth.dto.LoginResponse;
+import com.thonsokvechey.supermarketbackend.modules.auth.dto.LogoutRequest;
 import com.thonsokvechey.supermarketbackend.modules.auth.dto.RefreshTokenRequest;
 import com.thonsokvechey.supermarketbackend.modules.auth.entity.User;
 import com.thonsokvechey.supermarketbackend.modules.auth.repository.UserRepository;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,6 +83,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public void logout(String authorizationHeader, LogoutRequest request) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            String accessToken = authorizationHeader.substring(7).trim();
+            if (!accessToken.isEmpty()) {
+                jwtService.blacklistToken(accessToken);
+            }
+        }
+
+        if (request != null && request.getRefreshToken() != null && !request.getRefreshToken().isBlank()) {
+            jwtService.blacklistToken(request.getRefreshToken().trim());
+        }
+
+        SecurityContextHolder.clearContext();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public LoginResponse.UserInfo getCurrentUser(CustomUserDetails userDetails) {
         if (userDetails == null) {
@@ -123,4 +141,3 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 }
-
